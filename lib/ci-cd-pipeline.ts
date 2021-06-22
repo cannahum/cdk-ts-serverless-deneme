@@ -129,7 +129,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
               new GitHubSourceAction({
                 actionName: 'ReadRepo',
                 output: sourceOutput,
-                owner: 'cnahum',
+                owner: 'cannahum',
                 repo: 'cdk-ts-serverless-deneme',
                 oauthToken: cdk.SecretValue.secretsManager(
                   'cdk-ts-serverless-deneme-cicd-codebuild',
