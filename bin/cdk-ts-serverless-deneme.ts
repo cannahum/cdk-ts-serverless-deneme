@@ -3,6 +3,7 @@ import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
 import CdkTsServerlessDenemeStack from '../lib/cdk-ts-serverless-deneme-stack';
 import Environment from '../lib/Environment';
+import SudokuStackCICDPipeline from '../lib/ci-cd-pipeline';
 
 const app = new cdk.App();
 
@@ -41,3 +42,10 @@ new CdkTsServerlessDenemeStack(app, 'CdkTsServerlessDenemeStack', {
   appEnv,
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
+
+// eslint-disable-next-line no-new
+new SudokuStackCICDPipeline(
+  app,
+  'SudokuStackCICDPipelineStack',
+  { appEnv },
+);
