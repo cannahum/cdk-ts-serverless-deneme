@@ -15,8 +15,11 @@ switch (e) {
   case Environment.PPD:
     appEnv = Environment.PPD;
     break;
-  default:
+  case Environment.DEV:
     appEnv = Environment.DEV;
+    break;
+  default:
+    throw Error('No APP_ENV detected');
 }
 
 // eslint-disable-next-line no-new
