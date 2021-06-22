@@ -47,5 +47,8 @@ new CdkTsServerlessDenemeStack(app, 'CdkTsServerlessDenemeStack', {
 new SudokuStackCICDPipeline(
   app,
   'SudokuStackCICDPipelineStack',
-  { appEnv },
+  {
+    appEnv,
+    env: { region: 'us-east-1' },
+  },
 );
