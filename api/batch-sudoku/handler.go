@@ -11,7 +11,7 @@ type MyEvent struct {
 }
 
 func GenerateBatchSudokuHandler(ctx context.Context, name MyEvent) (string, error) {
-	return "Welcome to GenerateBatchSudokuHandler", nil
+	return "Welcome to GenerateBatchSudokuHandler!", nil
 }
 
 func main() {
