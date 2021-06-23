@@ -1,7 +1,6 @@
 import * as cdk from '@aws-cdk/core';
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline';
 import {
-  BuildEnvironmentVariableType,
   BuildSpec,
   LinuxBuildImage,
   PipelineProject,
@@ -12,10 +11,9 @@ import {
   CodeStarConnectionsSourceAction,
 } from '@aws-cdk/aws-codepipeline-actions';
 import { CfnParametersCode } from '@aws-cdk/aws-lambda';
-import Environment from './Environment';
+// import Environment from './Environment';
 
 interface SudokuStackCICDPipelineProps extends cdk.StackProps {
-    appEnv: Environment;
     sudokuCode: CfnParametersCode;
     batchSudokuCode: CfnParametersCode;
 }
@@ -26,11 +24,9 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
     constructor(
       scope: cdk.Construct,
       id: string,
-      { appEnv, sudokuCode, batchSudokuCode }: SudokuStackCICDPipelineProps,
+      { sudokuCode, batchSudokuCode }: SudokuStackCICDPipelineProps,
     ) {
       super(scope, id);
-
-      console.log(appEnv);
 
       const cdkBuildProject = new PipelineProject(this, 'CDKBuildProject', {
         buildSpec: BuildSpec.fromObject({
@@ -55,12 +51,6 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
         }),
         environment: {
           buildImage: LinuxBuildImage.STANDARD_5_0,
-          environmentVariables: {
-            APP_ENV: {
-              value: appEnv,
-              type: BuildEnvironmentVariableType.PLAINTEXT,
-            },
-          },
         },
       });
 
@@ -187,6 +177,12 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
                 parameterOverrides: {
                   ...sudokuCode.assign(sudokuBuildOutput.s3Location),
                   ...batchSudokuCode.assign(batchSudokuBuildOutput.s3Location),
+                  appEnv: 'topAppEnv',
+                  environment: {
+                    variables: {
+                      appEnv: 'nestedAppEnv',
+                    },
+                  },
                 },
                 stackName: 'CdkTsServerlessDenemeStack',
                 adminPermissions: true,

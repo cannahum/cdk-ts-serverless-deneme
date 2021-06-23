@@ -51,7 +51,7 @@ const { sudokuCode, batchSudokuCode } = new CdkTsServerlessDenemeStack(
 new SudokuStackCICDPipeline(
   app,
   'SudokuStackCICDPipelineStack',
-  { appEnv, sudokuCode, batchSudokuCode },
+  { sudokuCode, batchSudokuCode },
 );
 
 app.synth();
