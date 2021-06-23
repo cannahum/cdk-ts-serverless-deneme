@@ -8,8 +8,7 @@ import {
 import {
   CloudFormationCreateUpdateStackAction,
   CodeBuildAction,
-  GitHubSourceAction,
-  GitHubTrigger,
+  CodeStarConnectionsSourceAction,
 } from '@aws-cdk/aws-codepipeline-actions';
 import Environment from './Environment';
 
@@ -126,15 +125,14 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
           {
             stageName: 'Source',
             actions: [
-              new GitHubSourceAction({
-                actionName: 'ReadRepo',
+              new CodeStarConnectionsSourceAction({
+                actionName: 'CheckoutFromGithub',
+                // eslint-disable-next-line max-len
+                connectionArn: 'arn:aws:codestar-connections:us-east-1:502192330072:connection/e34c709f-d258-4a60-99bd-6e8c162ba8ec',
                 output: sourceOutput,
                 owner: 'cannahum',
                 repo: 'cdk-ts-serverless-deneme',
-                oauthToken: cdk.SecretValue.secretsManager(
-                  'cdk-ts-serverless-deneme-cicd-codebuild',
-                ),
-                trigger: GitHubTrigger.WEBHOOK,
+                branch: 'release',
               }),
             ],
           },
