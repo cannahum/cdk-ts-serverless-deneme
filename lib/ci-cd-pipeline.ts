@@ -11,10 +11,13 @@ import {
   CodeBuildAction,
   CodeStarConnectionsSourceAction,
 } from '@aws-cdk/aws-codepipeline-actions';
+import { CfnParametersCode } from '@aws-cdk/aws-lambda';
 import Environment from './Environment';
 
 interface SudokuStackCICDPipelineProps extends cdk.StackProps {
     appEnv: Environment;
+    sudokuCode: CfnParametersCode;
+    batchSudokuCode: CfnParametersCode;
 }
 
 export default class SudokuStackCICDPipelineStack extends cdk.Stack {
@@ -23,7 +26,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
     constructor(
       scope: cdk.Construct,
       id: string,
-      { appEnv }: SudokuStackCICDPipelineProps,
+      { appEnv, sudokuCode, batchSudokuCode }: SudokuStackCICDPipelineProps,
     ) {
       super(scope, id);
 
@@ -181,6 +184,10 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
                 templatePath: cdkBuildOutput.atPath(
                   'CdkTsServerlessDenemeStack.template.json',
                 ),
+                parameterOverrides: {
+                  ...sudokuCode.assign(sudokuBuildOutput.s3Location),
+                  ...batchSudokuCode.assign(batchSudokuBuildOutput.s3Location),
+                },
                 stackName: 'CdkTsServerlessDenemeStack',
                 adminPermissions: true,
                 extraInputs: [sudokuBuildOutput, batchSudokuBuildOutput],

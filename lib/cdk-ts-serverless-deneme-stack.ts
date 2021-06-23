@@ -1,27 +1,128 @@
 import * as cdk from '@aws-cdk/core';
-import SudokuLambdaWithAPI from './sudoku-lambda-with-api';
+import {
+  Runtime,
+  Code,
+  IFunction,
+  Function,
+  CfnParametersCode,
+} from '@aws-cdk/aws-lambda';
+import { CorsHttpMethod, HttpApi, HttpMethod } from '@aws-cdk/aws-apigatewayv2';
+import { LambdaProxyIntegration } from '@aws-cdk/aws-apigatewayv2-integrations';
 import Environment from './Environment';
 
 interface CdkTsServerlessDenemeStackProps extends cdk.StackProps {
-  appEnv: Environment
+  appEnv: Environment;
 }
 class CdkTsServerlessDenemeStack extends cdk.Stack {
+  public readonly httpApi: HttpApi;
+
+  public readonly cfnOutputAPI: cdk.CfnOutput;
+
+  private readonly appEnv: Environment;
+
+  public sudokuCode: CfnParametersCode;
+
+  public batchSudokuCode: CfnParametersCode;
+
   constructor(
     scope: cdk.Construct,
     id: string,
-    props: CdkTsServerlessDenemeStackProps,
+    { appEnv }: CdkTsServerlessDenemeStackProps,
   ) {
-    super(scope, id, props);
+    super(scope, id);
 
-    const sudokuLambdaWithAPI = new SudokuLambdaWithAPI(
+    this.appEnv = appEnv;
+    const generateSudokuHandler = this.buildLambdaGenerateSudoku();
+    const generateSudokuLambdaIntegration = new LambdaProxyIntegration({
+      handler: generateSudokuHandler,
+    });
+
+    const generateBatchSudokuHandler = this
+      .buildLambdaGenerateBatchSudoku();
+    const generateBatchSudokuLambdaIntegration = new LambdaProxyIntegration({
+      handler: generateBatchSudokuHandler,
+    });
+
+    this.httpApi = this.buildAPI(
+      generateSudokuLambdaIntegration,
+      generateBatchSudokuLambdaIntegration,
+    );
+
+    this.cfnOutputAPI = new cdk.CfnOutput(
       this,
-      'SudokuLambdaWithAPI',
-      {
-        env: props.appEnv,
+      `GenerateSudokuAPI-${this.appEnv}`, {
+        value: this.httpApi.url!,
+        exportName: 'GenerateSudokuAPIEndpoint',
       },
     );
 
-    console.log(sudokuLambdaWithAPI.cfnOutputAPI.exportName);
+    console.log(this.cfnOutputAPI.exportName);
+  }
+
+  private buildLambdaGenerateSudoku(): IFunction {
+    const sudokuHandlerCode = Code.fromCfnParameters();
+    this.sudokuCode = sudokuHandlerCode;
+    return new Function(
+      this,
+      `GenerateSudokuLambda-${this.appEnv}`,
+      {
+        runtime: Runtime.GO_1_X,
+        handler: 'main.GenerateSudokuHandler',
+        code: sudokuHandlerCode,
+        environment: {
+          appEnv: this.environment,
+        },
+      },
+    );
+  }
+
+  private buildLambdaGenerateBatchSudoku(): IFunction {
+    const batchSudokuHandlerCode = Code.fromCfnParameters();
+    this.batchSudokuCode = batchSudokuHandlerCode;
+    return new Function(
+      this,
+      `GenerateBatchSudokuLambda-${this.appEnv}`,
+      {
+        runtime: Runtime.GO_1_X,
+        handler: 'main.GenerateBatchSudokuHandler',
+        code: batchSudokuHandlerCode,
+        environment: {
+          appEnv: this.environment,
+        },
+      },
+    );
+  }
+
+  private buildAPI(
+    sudokuHandlerInt: LambdaProxyIntegration,
+    batchSudokuHandlerInt: LambdaProxyIntegration,
+  ): HttpApi {
+    const httpApi = new HttpApi(this, `GenerateSudokuHttpAPI-${this.appEnv}`, {
+      corsPreflight: {
+        allowOrigins: ['*'],
+        allowMethods: [CorsHttpMethod.GET],
+      },
+      apiName: 'generate-sudoku-api',
+      createDefaultStage: true,
+    });
+
+    httpApi.addRoutes({
+      path: '/sudoku',
+      methods: [
+        HttpMethod.GET,
+      ],
+      integration: sudokuHandlerInt,
+    });
+
+    httpApi.addRoutes({
+      path: '/sudoku/batch',
+      methods: [
+        HttpMethod.GET,
+      ],
+      integration: batchSudokuHandlerInt,
+    });
+
+    return httpApi;
   }
 }
 
