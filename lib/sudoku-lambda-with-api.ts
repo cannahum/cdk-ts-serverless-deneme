@@ -1,6 +1,10 @@
 import * as cdk from '@aws-cdk/core';
-import * as lambda from '@aws-cdk/aws-lambda-go';
-import { Runtime } from '@aws-cdk/aws-lambda';
+import {
+  Runtime,
+  Code,
+  IFunction,
+  Function,
+} from '@aws-cdk/aws-lambda';
 import { CorsHttpMethod, HttpApi, HttpMethod } from '@aws-cdk/aws-apigatewayv2';
 import { LambdaProxyIntegration } from '@aws-cdk/aws-apigatewayv2-integrations';
 import * as path from 'path';
@@ -15,9 +19,11 @@ export default class SudokuLambdaWithAPI extends cdk.Construct {
 
     public readonly cfnOutputAPI: cdk.CfnOutput;
 
+    private readonly environment: Environment;
+
     constructor(scope: cdk.Construct, id: string, { env }: LambdaWithAPIProps) {
       super(scope, id);
-
+      this.environment = env;
       const generateSudokuHandler = this.buildLambdaGenerateSudoku(env);
       const generateSudokuLambdaIntegration = new LambdaProxyIntegration({
         handler: generateSudokuHandler,
@@ -41,26 +47,52 @@ export default class SudokuLambdaWithAPI extends cdk.Construct {
       });
     }
 
-    private buildLambdaGenerateSudoku(env: Environment): lambda.GoFunction {
-      return new lambda.GoFunction(
+    private buildLambdaGenerateSudoku(env: Environment): IFunction {
+      return new Function(
         this,
         `GenerateSudokuLambda-${env}`,
         {
           runtime: Runtime.GO_1_X,
-          entry: path.join(__dirname, '..', 'api', 'sudoku'),
+          handler: 'main.main',
+          code: Code.fromAsset(path.join(__dirname, '..', 'api', 'sudoku')),
+          environment: {
+            appEnv: this.environment,
+          },
         },
       );
+      // return new lambda.GoFunction(
+      //   this,
+      //   `GenerateSudokuLambda-${env}`,
+      //   {
+      //     runtime: Runtime.GO_1_X,
+      //     entry: path.join(__dirname, '..', 'api', 'sudoku'),
+      //   },
+      // );
     }
 
-    private buildLambdaGenerateBatchSudoku(env: Environment) {
-      return new lambda.GoFunction(
+    private buildLambdaGenerateBatchSudoku(env: Environment): IFunction {
+      return new Function(
         this,
         `GenerateBatchSudokuLambda-${env}`,
         {
           runtime: Runtime.GO_1_X,
-          entry: path.join(__dirname, '..', 'api', 'batch-sudoku'),
+          handler: 'main.main',
+          code: Code.fromAsset(
+            path.join(__dirname, '..', 'api', 'batch-sudoku'),
+          ),
+          environment: {
+            appEnv: this.environment,
+          },
         },
       );
+      // return new lambda.GoFunction(
+      //   this,
+      //   `GenerateBatchSudokuLambda-${env}`,
+      //   {
+      //     runtime: Runtime.GO_1_X,
+      //     entry: path.join(__dirname, '..', 'api', 'batch-sudoku'),
+      //   },
+      // );
     }
 
     private buildAPI(
