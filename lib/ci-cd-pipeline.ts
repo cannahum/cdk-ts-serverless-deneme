@@ -1,6 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline';
 import {
+  BuildEnvironmentVariableType,
   BuildSpec,
   LinuxBuildImage,
   PipelineProject,
@@ -51,6 +52,12 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
         }),
         environment: {
           buildImage: LinuxBuildImage.STANDARD_5_0,
+          environmentVariables: {
+            APP_ENV: {
+              value: appEnv,
+              type: BuildEnvironmentVariableType.PLAINTEXT,
+            },
+          },
         },
       });
 
