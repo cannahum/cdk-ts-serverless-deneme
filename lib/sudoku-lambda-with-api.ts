@@ -19,13 +19,12 @@ export default class SudokuLambdaWithAPI extends cdk.Construct {
       super(scope, id);
 
       const generateSudokuHandler = this.buildLambdaGenerateSudoku(env);
-      const generateBatchSudokuHandler = this
-        .buildLambdaGenerateBatchSudoku(env);
-
       const generateSudokuLambdaIntegration = new LambdaProxyIntegration({
         handler: generateSudokuHandler,
       });
 
+      const generateBatchSudokuHandler = this
+        .buildLambdaGenerateBatchSudoku(env);
       const generateBatchSudokuLambdaIntegration = new LambdaProxyIntegration({
         handler: generateBatchSudokuHandler,
       });
