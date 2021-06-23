@@ -67,7 +67,7 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
       `GenerateSudokuLambda-${this.appEnv}`,
       {
         runtime: Runtime.GO_1_X,
-        handler: 'main.GenerateSudokuHandler',
+        handler: 'sudoku',
         code: sudokuHandlerCode,
         environment: {
           appEnv: this.environment,
@@ -84,7 +84,7 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
       `GenerateBatchSudokuLambda-${this.appEnv}`,
       {
         runtime: Runtime.GO_1_X,
-        handler: 'main.GenerateBatchSudokuHandler',
+        handler: 'batchsudoku',
         code: batchSudokuHandlerCode,
         environment: {
           appEnv: this.environment,
