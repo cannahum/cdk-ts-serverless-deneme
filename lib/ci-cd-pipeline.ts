@@ -75,7 +75,9 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
                 ],
               },
               build: {
-                commands: 'go build -o sudoku',
+                commands: [
+                  'go build -o sudoku',
+                ],
               },
             },
             artifacts: {
@@ -104,7 +106,10 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
                 ],
               },
               build: {
-                commands: 'go build -o batchsudoku',
+                commands: [
+                  'go build -o batchsudoku',
+                  'cd ../../',
+                ],
               },
             },
             artifacts: {
