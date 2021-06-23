@@ -1,6 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline';
 import {
+  BuildEnvironmentVariableType,
   BuildSpec,
   LinuxBuildImage,
   PipelineProject,
@@ -11,11 +12,12 @@ import {
   CodeStarConnectionsSourceAction,
 } from '@aws-cdk/aws-codepipeline-actions';
 import { CfnParametersCode } from '@aws-cdk/aws-lambda';
-// import Environment from './Environment';
+import Environment from './Environment';
 
 interface SudokuStackCICDPipelineProps extends cdk.StackProps {
-    sudokuCode: CfnParametersCode;
-    batchSudokuCode: CfnParametersCode;
+  appEnv: Environment;
+  sudokuCode: CfnParametersCode;
+  batchSudokuCode: CfnParametersCode;
 }
 
 export default class SudokuStackCICDPipelineStack extends cdk.Stack {
@@ -24,7 +26,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
     constructor(
       scope: cdk.Construct,
       id: string,
-      { sudokuCode, batchSudokuCode }: SudokuStackCICDPipelineProps,
+      { appEnv, sudokuCode, batchSudokuCode }: SudokuStackCICDPipelineProps,
     ) {
       super(scope, id);
 
@@ -51,6 +53,12 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
         }),
         environment: {
           buildImage: LinuxBuildImage.STANDARD_5_0,
+          environmentVariables: {
+            APP_ENV: {
+              value: appEnv,
+              type: BuildEnvironmentVariableType.PLAINTEXT,
+            },
+          },
         },
       });
 
