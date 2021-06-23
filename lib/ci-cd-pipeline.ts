@@ -125,6 +125,12 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
           }),
           environment: {
             buildImage: LinuxBuildImage.STANDARD_2_0,
+            environmentVariables: {
+              appEnv: {
+                value: appEnv,
+                type: BuildEnvironmentVariableType.PLAINTEXT,
+              },
+            },
           },
         },
       );
@@ -185,12 +191,6 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
                 parameterOverrides: {
                   ...sudokuCode.assign(sudokuBuildOutput.s3Location),
                   ...batchSudokuCode.assign(batchSudokuBuildOutput.s3Location),
-                  appEnv: 'topAppEnv',
-                  environment: {
-                    variables: {
-                      appEnv: 'nestedAppEnv',
-                    },
-                  },
                 },
                 stackName: 'CdkTsServerlessDenemeStack',
                 adminPermissions: true,
