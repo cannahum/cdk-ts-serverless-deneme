@@ -79,7 +79,6 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
               },
             },
             artifacts: {
-              'base-directory': 'api',
               files: [
                 'sudoku',
               ],
@@ -109,7 +108,6 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
               },
             },
             artifacts: {
-              'base-directory': 'api',
               files: [
                 'batchsudoku',
               ],
