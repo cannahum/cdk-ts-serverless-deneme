@@ -5,8 +5,6 @@ import CdkTsServerlessDenemeStack from '../lib/cdk-ts-serverless-deneme-stack';
 import Environment from '../lib/Environment';
 import SudokuStackCICDPipeline from '../lib/ci-cd-pipeline';
 
-const app = new cdk.App();
-
 const e = process.env.APP_ENV;
 let appEnv;
 switch (e) {
@@ -22,6 +20,8 @@ switch (e) {
   default:
     throw Error('No APP_ENV detected');
 }
+
+const app = new cdk.App();
 
 // eslint-disable-next-line no-new
 new CdkTsServerlessDenemeStack(app, 'CdkTsServerlessDenemeStack', {
@@ -49,3 +49,5 @@ new SudokuStackCICDPipeline(
   'SudokuStackCICDPipelineStack',
   { appEnv },
 );
+
+app.synth();

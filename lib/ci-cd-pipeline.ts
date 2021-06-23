@@ -46,7 +46,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
           artifacts: {
             'base-directory': 'dist',
             files: [
-              'LambdaStack.template.json',
+              'CdkTsServerlessDenemeStack.template.json',
             ],
           },
         }),
@@ -172,7 +172,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
               new CloudFormationCreateUpdateStackAction({
                 actionName: 'Sudoku_Lambda_Cfn_Deploy',
                 templatePath: cdkBuildOutput.atPath(
-                  'LambdaStack.template.json',
+                  'CdkTsServerlessDenemeStack.template.json',
                 ),
                 stackName: 'CdkTsServerlessDenemeStack',
                 adminPermissions: true,
