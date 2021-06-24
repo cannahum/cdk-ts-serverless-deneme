@@ -26,7 +26,7 @@ const app = new cdk.App();
 // eslint-disable-next-line no-new
 const { sudokuCode, batchSudokuCode } = new CdkTsServerlessDenemeStack(
   app,
-  'CdkTsServerlessDenemeStack',
+  `CdkTsServerlessDenemeStack-${appEnv}`,
   {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
@@ -51,7 +51,7 @@ const { sudokuCode, batchSudokuCode } = new CdkTsServerlessDenemeStack(
 new SudokuStackCICDPipeline(
   app,
   'SudokuStackCICDPipelineStack',
-  { appEnv, sudokuCode, batchSudokuCode },
+  { sudokuCode, batchSudokuCode },
 );
 
 app.synth();

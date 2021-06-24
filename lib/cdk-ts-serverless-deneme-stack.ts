@@ -62,14 +62,11 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
     this.sudokuCode = sudokuHandlerCode;
     return new Function(
       this,
-      `GenerateSudokuLambda-${this.appEnv}`,
+      `GenerateSudoku-${this.appEnv}`,
       {
         runtime: Runtime.GO_1_X,
         handler: 'sudoku',
         code: sudokuHandlerCode,
-        environment: {
-          APP_ENV: this.appEnv,
-        },
       },
     );
   }
@@ -79,14 +76,11 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
     this.batchSudokuCode = batchSudokuHandlerCode;
     return new Function(
       this,
-      `GenerateBatchSudokuLambda-${this.appEnv}`,
+      `GenerateBatchSudoku-${this.appEnv}`,
       {
         runtime: Runtime.GO_1_X,
         handler: 'batchsudoku',
         code: batchSudokuHandlerCode,
-        environment: {
-          APP_ENV: this.appEnv,
-        },
       },
     );
   }
@@ -95,7 +89,7 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
     sudokuHandlerInt: LambdaProxyIntegration,
     batchSudokuHandlerInt: LambdaProxyIntegration,
   ): HttpApi {
-    const httpApi = new HttpApi(this, `GenerateSudokuHttpAPI-${this.appEnv}`, {
+    const httpApi = new HttpApi(this, `SudokuHttpAPI-${this.appEnv}`, {
       corsPreflight: {
         allowOrigins: ['*'],
         allowMethods: [CorsHttpMethod.GET],

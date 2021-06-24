@@ -1,6 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline';
 import {
+  BuildEnvironment,
   BuildEnvironmentVariableType,
   BuildSpec,
   LinuxBuildImage,
@@ -15,7 +16,6 @@ import { CfnParametersCode } from '@aws-cdk/aws-lambda';
 import Environment from './Environment';
 
 interface SudokuStackCICDPipelineProps extends cdk.StackProps {
-  appEnv: Environment;
   sudokuCode: CfnParametersCode;
   batchSudokuCode: CfnParametersCode;
 }
@@ -26,113 +26,22 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
     constructor(
       scope: cdk.Construct,
       id: string,
-      { appEnv, sudokuCode, batchSudokuCode }: SudokuStackCICDPipelineProps,
+      { sudokuCode, batchSudokuCode }: SudokuStackCICDPipelineProps,
     ) {
       super(scope, id);
 
-      const cdkBuildProject = new PipelineProject(this, 'CDKBuildProject', {
-        buildSpec: BuildSpec.fromObject({
-          version: '0.2',
-          phases: {
-            install: {
-              commands: 'npm install',
-            },
-            build: {
-              commands: [
-                'npm run build',
-                'npm run cdk synth -- -o dist',
-              ],
-            },
-          },
-          artifacts: {
-            'base-directory': 'dist',
-            files: [
-              'CdkTsServerlessDenemeStack.template.json',
-            ],
-          },
-        }),
-        environment: {
-          buildImage: LinuxBuildImage.STANDARD_5_0,
-          environmentVariables: {
-            APP_ENV: {
-              value: appEnv,
-              type: BuildEnvironmentVariableType.PLAINTEXT,
-            },
-          },
-        },
-      });
-
-      const sudokuLambdaBuildProject = new PipelineProject(
-        this,
-        'SudokuLambdaBuildProject',
-        {
-          buildSpec: BuildSpec.fromObject({
-            version: '0.2',
-            phases: {
-              install: {
-                commands: [
-                  'cd api/sudoku',
-                  'go get ./...',
-                ],
-              },
-              build: {
-                commands: [
-                  'go build -o sudoku',
-                  'ls',
-                ],
-              },
-            },
-            artifacts: {
-              'base-directory': 'api/sudoku',
-              files: [
-                'sudoku',
-              ],
-            },
-          }),
-          environment: {
-            buildImage: LinuxBuildImage.STANDARD_2_0,
-          },
-        },
+      const cdkBuildProjectPPD = this.getCdkBuild(Environment.PPD);
+      const sudokuLambdaBuildProjectPPD = this.getGoLambdaBuild(
+        Environment.PPD,
+        'GenerateSudoku',
+        'api/sudoku',
+        'sudoku',
       );
-
-      const batchSudokuLambdaBuildProject = new PipelineProject(
-        this,
-        'BatchSudokuLambdaBuildProject',
-        {
-          buildSpec: BuildSpec.fromObject({
-            version: '0.2',
-            phases: {
-              install: {
-                commands: [
-                  'cd api/batch-sudoku',
-                  'go get ./...',
-                ],
-              },
-              build: {
-                commands: [
-                  'go build -o batchsudoku',
-                  'cd ../../',
-                  'ls',
-                ],
-              },
-            },
-            artifacts: {
-              'base-directory': 'api/batch-sudoku',
-              files: [
-                'batchsudoku',
-              ],
-            },
-          }),
-          environment: {
-            buildImage: LinuxBuildImage.STANDARD_2_0,
-            environmentVariables: {
-              appEnv: {
-                value: appEnv,
-                type: BuildEnvironmentVariableType.PLAINTEXT,
-              },
-            },
-          },
-        },
+      const batchSudokuLambdaBuildProjectPPD = this.getGoLambdaBuild(
+        Environment.PPD,
+        'GenerateBatchSudoku',
+        'api/batch-sudoku',
+        'batchsudoku',
       );
 
       const sourceOutput = new Artifact();
@@ -158,23 +67,23 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
             ],
           },
           {
-            stageName: 'Build',
+            stageName: 'Build-PPD',
             actions: [
               new CodeBuildAction({
-                actionName: 'SudokuLambda_Build',
-                project: sudokuLambdaBuildProject,
+                actionName: 'SudokuLambda_BuildAction',
+                project: sudokuLambdaBuildProjectPPD,
                 input: sourceOutput,
                 outputs: [sudokuBuildOutput],
               }),
               new CodeBuildAction({
-                actionName: 'BatchSudokuLambda_Build',
-                project: batchSudokuLambdaBuildProject,
+                actionName: 'BatchSudokuLambda_BuildAction',
+                project: batchSudokuLambdaBuildProjectPPD,
                 input: sourceOutput,
                 outputs: [batchSudokuBuildOutput],
               }),
               new CodeBuildAction({
-                actionName: 'CDK_Build',
-                project: cdkBuildProject,
+                actionName: 'CDK_BuildAction',
+                project: cdkBuildProjectPPD,
                 input: sourceOutput,
                 outputs: [cdkBuildOutput],
               }),
@@ -199,6 +108,97 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
             ],
           },
         ],
+      });
+    }
+
+    private getCdkBuild(appEnv: Environment): PipelineProject {
+      const buildSpec = BuildSpec.fromObject({
+        version: '0.2',
+        phases: {
+          install: {
+            commands: 'npm install',
+          },
+          build: {
+            commands: [
+              'npm run build',
+              'npm run cdk synth -- -o dist',
+            ],
+          },
+        },
+        artifacts: {
+          'base-directory': 'dist',
+          files: [
+            'CdkTsServerlessDenemeStack.template.json',
+          ],
+        },
+      });
+
+      const environment: BuildEnvironment = {
+        buildImage: LinuxBuildImage.STANDARD_5_0,
+        environmentVariables: {
+          APP_ENV: {
+            value: appEnv,
+            type: BuildEnvironmentVariableType.PLAINTEXT,
+          },
+        },
+      };
+
+      return this.getCodebuildPipelineProject(
+        'CDKBuildProject',
+        appEnv,
+        buildSpec,
+        environment,
+      );
+    }
+
+    private getGoLambdaBuild(
+      appEnv: Environment,
+      lambdaFnName: string,
+      baseDirectory: string,
+      outputFileName: string,
+    ): PipelineProject {
+      const buildSpec = BuildSpec.fromObject({
+        version: '0.2',
+        phases: {
+          install: {
+            commands: [
+              `cd ${baseDirectory}`,
+              'go get ./...',
+            ],
+          },
+          build: {
+            commands: [
+              `go build -o ${outputFileName}`,
+            ],
+          },
+        },
+        artifacts: {
+          'base-directory': baseDirectory,
+          files: [
+            outputFileName,
+          ],
+        },
+      });
+
+      return this.getCodebuildPipelineProject(
+        `${lambdaFnName}-LambdaBuild`,
+        appEnv,
+        buildSpec,
+        {
+          buildImage: LinuxBuildImage.STANDARD_2_0,
+        },
+      );
+    }
+
+    private getCodebuildPipelineProject(
+      buildName: string,
+      appEnv: Environment,
+      spec: BuildSpec,
+      env: BuildEnvironment,
+    ): PipelineProject {
+      return new PipelineProject(this, `${buildName}-${appEnv}`, {
+        buildSpec: spec,
+        environment: env,
       });
     }
 }
