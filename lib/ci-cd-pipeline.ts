@@ -12,7 +12,7 @@ import {
   CloudFormationCreateUpdateStackAction,
   CodeBuildAction,
   CodeStarConnectionsSourceAction,
-  // ManualApprovalAction,
+  ManualApprovalAction,
 } from '@aws-cdk/aws-codepipeline-actions';
 import { CfnParametersCode } from '@aws-cdk/aws-lambda';
 import CdkTsServerlessDenemeStack from './cdk-ts-serverless-deneme-stack';
@@ -200,19 +200,14 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
             stageName: 'Deploy-PPD',
             actions: [
               deployActionPPD,
+              new ManualApprovalAction({
+                actionName: 'Deploy-Sudoku-PRD-Approval',
+                additionalInformation: 'Ready to deploy to Production?',
+                externalEntityLink: ppdStack.apiURL,
+                runOrder: 2,
+              }),
             ],
           },
-          // {
-          //   stageName: 'AdminApproval',
-          //   actions: [
-          //     new ManualApprovalAction({
-          //       actionName: 'Deploy-Sudoku-PRD-Approval',
-          //       additionalInformation: 'Ready to deploy to Production?',
-          //       externalEntityLink: ppdStack.apiURL,
-          //       runOrder: 1,
-          //     }),
-          //   ],
-          // },
           {
             stageName: 'Build-PRD',
             actions: [
