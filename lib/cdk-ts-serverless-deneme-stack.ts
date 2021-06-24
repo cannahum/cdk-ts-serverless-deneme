@@ -69,6 +69,9 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
         runtime: Runtime.GO_1_X,
         handler: 'sudoku',
         code: sudokuHandlerCode,
+        environment: {
+          APP_ENV: this.appEnv,
+        },
       },
     );
   }
@@ -83,6 +86,9 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
         runtime: Runtime.GO_1_X,
         handler: 'batchsudoku',
         code: batchSudokuHandlerCode,
+        environment: {
+          APP_ENV: this.appEnv,
+        },
       },
     );
   }
