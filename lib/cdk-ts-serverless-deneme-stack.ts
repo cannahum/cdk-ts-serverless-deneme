@@ -54,7 +54,7 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
       this,
       `GenerateSudokuAPI-${this.appEnv}`, {
         value: this.httpApi.url!,
-        exportName: 'GenerateSudokuAPIEndpoint',
+        exportName: `GenerateSudokuAPIEndpoint-${this.appEnv}`,
       },
     );
   }
