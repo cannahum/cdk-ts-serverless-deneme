@@ -31,6 +31,7 @@ interface SudokuStackCICDPipelineProps extends cdk.StackProps {
 export default class SudokuStackCICDPipelineStack extends cdk.Stack {
   public static getDeploymentAction(
     templatePath: ArtifactPath,
+    appEnv: Environment,
     parameterOverrides: {
       [index: string]: any;
     } = {},
@@ -40,7 +41,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
       actionName: 'Sudoku_Lambda_Cfn_Deploy',
       templatePath,
       parameterOverrides,
-      stackName: CdkTsServerlessDenemeStack.STACK_NAME,
+      stackName: `${CdkTsServerlessDenemeStack.STACK_NAME}${appEnv}`,
       adminPermissions: true,
       extraInputs,
     });
@@ -152,8 +153,9 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
       const deployActionPPD = SudokuStackCICDPipelineStack.getDeploymentAction(
         cdkBuildOutputPPD.atPath(
           // eslint-disable-next-line max-len
-          `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PPD}.template.json`,
+          `${CdkTsServerlessDenemeStack.STACK_NAME}${Environment.PPD}.template.json`,
         ),
+        Environment.PPD,
         {
           ...ppdStack.sudokuCode.assign(sudokuBuildOutputPPD.s3Location),
           ...ppdStack
@@ -166,8 +168,9 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
       const deployActionPRD = SudokuStackCICDPipelineStack.getDeploymentAction(
         cdkBuildOutputPRD.atPath(
           // eslint-disable-next-line max-len
-          `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PRD}.template.json`,
+          `${CdkTsServerlessDenemeStack.STACK_NAME}${Environment.PRD}.template.json`,
         ),
+        Environment.PRD,
         {
           ...prdStack.sudokuCode.assign(sudokuBuildOutputPRD.s3Location),
           ...prdStack
@@ -246,7 +249,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
           'base-directory': 'dist',
           files: [
             // eslint-disable-next-line max-len
-            `${CdkTsServerlessDenemeStack.STACK_NAME}-${appEnv}.template.json`,
+            `${CdkTsServerlessDenemeStack.STACK_NAME}${appEnv}.template.json`,
           ],
         },
       });
