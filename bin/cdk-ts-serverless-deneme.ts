@@ -5,45 +5,23 @@ import CdkTsServerlessDenemeStack from '../lib/cdk-ts-serverless-deneme-stack';
 import Environment from '../lib/Environment';
 import SudokuStackCICDPipeline from '../lib/ci-cd-pipeline';
 
-const e = process.env.APP_ENV;
-let appEnv;
-switch (e) {
-  case Environment.PRD:
-    appEnv = Environment.PRD;
-    break;
-  case Environment.PPD:
-    appEnv = Environment.PPD;
-    break;
-  case Environment.DEV:
-    appEnv = Environment.DEV;
-    break;
-  default:
-    throw Error('No APP_ENV detected');
-}
-
 const app = new cdk.App();
 
-// eslint-disable-next-line no-new
-const { sudokuCode, batchSudokuCode } = new CdkTsServerlessDenemeStack(
+const ppdStack = new CdkTsServerlessDenemeStack(
   app,
-  `${CdkTsServerlessDenemeStack.STACK_NAME}-${appEnv}`,
+  `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PPD}`,
   {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
-
-    /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-    // env: {
-    // account: process.env.CDK_DEFAULT_ACCOUNT,
-    // region: process.env.CDK_DEFAULT_REGION
-    // },
-
-    /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
     env: { region: 'us-east-1' },
-    appEnv,
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+    appEnv: Environment.PPD,
+  },
+);
+
+const prdStack = new CdkTsServerlessDenemeStack(
+  app,
+  `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PRD}`,
+  {
+    env: { region: 'us-east-1' },
+    appEnv: Environment.PRD,
   },
 );
 
@@ -51,7 +29,18 @@ const { sudokuCode, batchSudokuCode } = new CdkTsServerlessDenemeStack(
 new SudokuStackCICDPipeline(
   app,
   'SudokuStackCICDPipelineStack',
-  { sudokuCode, batchSudokuCode },
+  {
+    ppdStack: {
+      sudokuCode: ppdStack.sudokuCode,
+      batchSudokuCode: ppdStack.batchSudokuCode,
+      apiURL: ppdStack.httpApi.url!,
+    },
+    prdStack: {
+      sudokuCode: prdStack.sudokuCode,
+      batchSudokuCode: prdStack.batchSudokuCode,
+      apiURL: prdStack.httpApi.url!,
+    },
+  },
 );
 
 app.synth();

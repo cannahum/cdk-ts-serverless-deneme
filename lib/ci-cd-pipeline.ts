@@ -1,5 +1,5 @@
 import * as cdk from '@aws-cdk/core';
-import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline';
+import { Artifact, ArtifactPath, Pipeline } from '@aws-cdk/aws-codepipeline';
 import {
   BuildEnvironment,
   BuildEnvironmentVariable,
@@ -12,32 +12,112 @@ import {
   CloudFormationCreateUpdateStackAction,
   CodeBuildAction,
   CodeStarConnectionsSourceAction,
+  // ManualApprovalAction,
 } from '@aws-cdk/aws-codepipeline-actions';
 import { CfnParametersCode } from '@aws-cdk/aws-lambda';
 import CdkTsServerlessDenemeStack from './cdk-ts-serverless-deneme-stack';
 import Environment from './Environment';
 
-interface SudokuStackCICDPipelineProps extends cdk.StackProps {
+type StackInfo = {
   sudokuCode: CfnParametersCode;
   batchSudokuCode: CfnParametersCode;
+  apiURL: string;
+}
+interface SudokuStackCICDPipelineProps extends cdk.StackProps {
+  ppdStack: StackInfo;
+  prdStack: StackInfo
 }
 
 export default class SudokuStackCICDPipelineStack extends cdk.Stack {
+  public static getDeploymentAction(
+    templatePath: ArtifactPath,
+    parameterOverrides: {
+      [index: string]: any;
+    } = {},
+    extraInputs?: Artifact[],
+  ): CloudFormationCreateUpdateStackAction {
+    return new CloudFormationCreateUpdateStackAction({
+      actionName: 'Sudoku_Lambda_Cfn_Deploy',
+      templatePath,
+      parameterOverrides,
+      stackName: CdkTsServerlessDenemeStack.STACK_NAME,
+      adminPermissions: true,
+      extraInputs,
+    });
+  }
+
     private readonly pipeline: Pipeline;
 
     constructor(
       scope: cdk.Construct,
       id: string,
-      { sudokuCode, batchSudokuCode }: SudokuStackCICDPipelineProps,
+      { ppdStack, prdStack }: SudokuStackCICDPipelineProps,
     ) {
       super(scope, id);
 
+      // Source code - Github
+      const sourceOutput = new Artifact();
+      const codeStarAction = new CodeStarConnectionsSourceAction({
+        actionName: 'CheckoutFromGithub',
+        // eslint-disable-next-line max-len
+        connectionArn: 'arn:aws:codestar-connections:us-east-1:502192330072:connection/e34c709f-d258-4a60-99bd-6e8c162ba8ec',
+        output: sourceOutput,
+        owner: 'cannahum',
+        repo: 'cdk-ts-serverless-deneme',
+        branch: 'release',
+      });
+
+      // CDK Pipeline Stack - Preproduction
+      const cdkBuildOutputPPD = new Artifact('CdkBuildOutputPPD');
       const cdkBuildProjectPPD = this.getCdkBuild(Environment.PPD);
+      const cdkBuildActionPPD = new CodeBuildAction({
+        actionName: 'CDKPPD_BuildAction',
+        project: cdkBuildProjectPPD,
+        input: sourceOutput,
+        outputs: [cdkBuildOutputPPD],
+      });
+      // CDK Pipeline Stack - Production
+      const cdkBuildOutputPRD = new Artifact('CdkBuildOutputPRD');
+      const cdkBuildProjectPRD = this.getCdkBuild(Environment.PRD);
+      const cdkBuildActionPRD = new CodeBuildAction({
+        actionName: 'CDKPRD_BuildAction',
+        project: cdkBuildProjectPRD,
+        input: sourceOutput,
+        outputs: [cdkBuildOutputPRD],
+      });
+
+      // Sudoku Lambda Stack - Preproduction
+      const sudokuBuildOutputPPD = new Artifact('SudokuBuildOutputPPD');
       const sudokuLambdaBuildProjectPPD = this.getGoLambdaBuild(
         Environment.PPD,
         'GenerateSudoku',
         'api/sudoku',
         'sudoku',
+      );
+      const sudokuLambdaBuildActionPPD = new CodeBuildAction({
+        actionName: 'SudokuLambdaPPD_BuildAction',
+        project: sudokuLambdaBuildProjectPPD,
+        input: sourceOutput,
+        outputs: [sudokuBuildOutputPPD],
+      });
+      // Sudoku Lambda Stack - Production
+      const sudokuBuildOutputPRD = new Artifact('SudokuBuildOutputPRD');
+      const sudokuLambdaBuildProjectPRD = this.getGoLambdaBuild(
+        Environment.PRD,
+        'GenerateSudoku',
+        'api/sudoku',
+        'sudoku',
+      );
+      const sudokuLambdaBuildActionPRD = new CodeBuildAction({
+        actionName: 'SudokuLambdaPRD_BuildAction',
+        project: sudokuLambdaBuildProjectPRD,
+        input: sourceOutput,
+        outputs: [sudokuBuildOutputPRD],
+      });
+
+      // Batch Sudoku Lambda Stack - Preproduction
+      const batchSudokuBuildOutputPPD = new Artifact(
+        'BatchSudokuBuildOutputPPD',
       );
       const batchSudokuLambdaBuildProjectPPD = this.getGoLambdaBuild(
         Environment.PPD,
@@ -45,11 +125,56 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
         'api/batch-sudoku',
         'batchsudoku',
       );
+      const batchSudokuLambdaBuildActionPPD = new CodeBuildAction({
+        actionName: 'BatchSudokuLambdaPPD_BuildAction',
+        project: batchSudokuLambdaBuildProjectPPD,
+        input: sourceOutput,
+        outputs: [batchSudokuBuildOutputPPD],
+      });
+      // Batch Sudoku Lambda Stack - Production
+      const batchSudokuBuildOutputPRD = new Artifact(
+        'BatchSudokuBuildOutputPRD',
+      );
+      const batchSudokuLambdaBuildProjectPRD = this.getGoLambdaBuild(
+        Environment.PRD,
+        'GenerateBatchSudoku',
+        'api/batch-sudoku',
+        'batchsudoku',
+      );
+      const batchSudokuLambdaBuildActionPRD = new CodeBuildAction({
+        actionName: 'BatchSudokuLambdaPRD_BuildAction',
+        project: batchSudokuLambdaBuildProjectPRD,
+        input: sourceOutput,
+        outputs: [batchSudokuBuildOutputPRD],
+      });
 
-      const sourceOutput = new Artifact();
-      const sudokuBuildOutput = new Artifact('SudokuBuildOutput');
-      const batchSudokuBuildOutput = new Artifact('BatchSudokuBuildOutput');
-      const cdkBuildOutput = new Artifact('CdkBuildOutput');
+      // Deployment - Preproduction
+      const deployActionPPD = SudokuStackCICDPipelineStack.getDeploymentAction(
+        cdkBuildOutputPPD.atPath(
+          // eslint-disable-next-line max-len
+          `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PPD}.template.json`,
+        ),
+        {
+          ...ppdStack.sudokuCode.assign(sudokuBuildOutputPPD.s3Location),
+          ...ppdStack
+            .batchSudokuCode.assign(batchSudokuBuildOutputPPD.s3Location),
+        },
+        [sudokuBuildOutputPPD, batchSudokuBuildOutputPPD],
+      );
+
+      // Deployment - Production
+      const deployActionPRD = SudokuStackCICDPipelineStack.getDeploymentAction(
+        cdkBuildOutputPPD.atPath(
+          // eslint-disable-next-line max-len
+          `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PRD}.template.json`,
+        ),
+        {
+          ...prdStack.sudokuCode.assign(sudokuBuildOutputPRD.s3Location),
+          ...prdStack
+            .batchSudokuCode.assign(batchSudokuBuildOutputPRD.s3Location),
+        },
+        [sudokuBuildOutputPRD, batchSudokuBuildOutputPRD],
+      );
 
       this.pipeline = new Pipeline(this, 'Pipeline', {
         crossAccountKeys: false,
@@ -57,57 +182,46 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
           {
             stageName: 'Source',
             actions: [
-              new CodeStarConnectionsSourceAction({
-                actionName: 'CheckoutFromGithub',
-                // eslint-disable-next-line max-len
-                connectionArn: 'arn:aws:codestar-connections:us-east-1:502192330072:connection/e34c709f-d258-4a60-99bd-6e8c162ba8ec',
-                output: sourceOutput,
-                owner: 'cannahum',
-                repo: 'cdk-ts-serverless-deneme',
-                branch: 'release',
-              }),
+              codeStarAction,
             ],
           },
           {
             stageName: 'Build-PPD',
             actions: [
-              new CodeBuildAction({
-                actionName: 'SudokuLambda_BuildAction',
-                project: sudokuLambdaBuildProjectPPD,
-                input: sourceOutput,
-                outputs: [sudokuBuildOutput],
-              }),
-              new CodeBuildAction({
-                actionName: 'BatchSudokuLambda_BuildAction',
-                project: batchSudokuLambdaBuildProjectPPD,
-                input: sourceOutput,
-                outputs: [batchSudokuBuildOutput],
-              }),
-              new CodeBuildAction({
-                actionName: 'CDK_BuildAction',
-                project: cdkBuildProjectPPD,
-                input: sourceOutput,
-                outputs: [cdkBuildOutput],
-              }),
+              sudokuLambdaBuildActionPPD,
+              batchSudokuLambdaBuildActionPPD,
+              cdkBuildActionPPD,
             ],
           },
           {
-            stageName: 'Deploy',
+            stageName: 'Deploy-PPD',
             actions: [
-              new CloudFormationCreateUpdateStackAction({
-                actionName: 'Sudoku_Lambda_Cfn_Deploy',
-                templatePath: cdkBuildOutput.atPath(
-                  // eslint-disable-next-line max-len
-                  `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PPD}.template.json`,
-                ),
-                parameterOverrides: {
-                  ...sudokuCode.assign(sudokuBuildOutput.s3Location),
-                  ...batchSudokuCode.assign(batchSudokuBuildOutput.s3Location),
-                },
-                stackName: 'CdkTsServerlessDenemeStack',
-                adminPermissions: true,
-                extraInputs: [sudokuBuildOutput, batchSudokuBuildOutput],
-              }),
+              deployActionPPD,
+            ],
+          },
+          // {
+          //   stageName: 'AdminApproval',
+          //   actions: [
+          //     new ManualApprovalAction({
+          //       actionName: 'Deploy-Sudoku-PRD-Approval',
+          //       additionalInformation: 'Ready to deploy to Production?',
+          //       externalEntityLink: ppdStack.apiURL,
+          //       runOrder: 1,
+          //     }),
+          //   ],
+          // },
+          {
+            stageName: 'Build-PRD',
+            actions: [
+              sudokuLambdaBuildActionPRD,
+              batchSudokuLambdaBuildActionPRD,
+              cdkBuildActionPRD,
+            ],
+          },
+          {
+            stageName: 'Deploy-PRD',
+            actions: [
+              deployActionPRD,
             ],
           },
         ],
