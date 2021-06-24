@@ -16,7 +16,7 @@ type MyEvent struct {
 }
 
 func GenerateSudokuHandler(ctx context.Context, name MyEvent) (string, error) {
-	return fmt.Sprintf("Env %s: Welcome to GenerateSudokuHandler!", appEnv), nil
+	return fmt.Sprintf("%s: Welcome to Generate Sudoku Handler!", appEnv), nil
 }
 
 func main() {
