@@ -55,8 +55,6 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
         exportName: 'GenerateSudokuAPIEndpoint',
       },
     );
-
-    console.log(this.cfnOutputAPI.exportName);
   }
 
   private buildLambdaGenerateSudoku(): IFunction {
@@ -70,7 +68,7 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
         handler: 'sudoku',
         code: sudokuHandlerCode,
         environment: {
-          appEnv: this.environment,
+          APP_ENV: this.appEnv,
         },
       },
     );
@@ -87,7 +85,7 @@ class CdkTsServerlessDenemeStack extends cdk.Stack {
         handler: 'batchsudoku',
         code: batchSudokuHandlerCode,
         environment: {
-          appEnv: this.environment,
+          APP_ENV: this.appEnv,
         },
       },
     );

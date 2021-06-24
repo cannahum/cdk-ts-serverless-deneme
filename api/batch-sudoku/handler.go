@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-var appEnv = os.Getenv("appEnv")
+var appEnv = os.Getenv("APP_ENV")
 
 type MyEvent struct {
 	Name string `json:"name"`
