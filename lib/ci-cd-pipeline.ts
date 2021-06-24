@@ -164,7 +164,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
 
       // Deployment - Production
       const deployActionPRD = SudokuStackCICDPipelineStack.getDeploymentAction(
-        cdkBuildOutputPPD.atPath(
+        cdkBuildOutputPRD.atPath(
           // eslint-disable-next-line max-len
           `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PRD}.template.json`,
         ),
@@ -246,7 +246,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
           'base-directory': 'dist',
           files: [
             // eslint-disable-next-line max-len
-            `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PPD}.template.json`,
+            `${CdkTsServerlessDenemeStack.STACK_NAME}-${appEnv}.template.json`,
           ],
         },
       });
