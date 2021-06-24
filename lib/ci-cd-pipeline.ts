@@ -13,6 +13,7 @@ import {
   CodeStarConnectionsSourceAction,
 } from '@aws-cdk/aws-codepipeline-actions';
 import { CfnParametersCode } from '@aws-cdk/aws-lambda';
+import CdkTsServerlessDenemeStack from './cdk-ts-serverless-deneme-stack';
 import Environment from './Environment';
 
 interface SudokuStackCICDPipelineProps extends cdk.StackProps {
@@ -95,7 +96,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
               new CloudFormationCreateUpdateStackAction({
                 actionName: 'Sudoku_Lambda_Cfn_Deploy',
                 templatePath: cdkBuildOutput.atPath(
-                  'CdkTsServerlessDenemeStack.template.json',
+                  `${CdkTsServerlessDenemeStack.STACK_NAME}.template.json`,
                 ),
                 parameterOverrides: {
                   ...sudokuCode.assign(sudokuBuildOutput.s3Location),
@@ -128,7 +129,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
         artifacts: {
           'base-directory': 'dist',
           files: [
-            'CdkTsServerlessDenemeStack.template.json',
+            `${CdkTsServerlessDenemeStack.STACK_NAME}.template.json`,
           ],
         },
       });

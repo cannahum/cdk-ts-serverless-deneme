@@ -14,6 +14,8 @@ interface CdkTsServerlessDenemeStackProps extends cdk.StackProps {
   appEnv: Environment;
 }
 class CdkTsServerlessDenemeStack extends cdk.Stack {
+  public static readonly STACK_NAME = 'CdkTsServerlessDenemeStack';
+
   public readonly httpApi: HttpApi;
 
   public readonly cfnOutputAPI: cdk.CfnOutput;
