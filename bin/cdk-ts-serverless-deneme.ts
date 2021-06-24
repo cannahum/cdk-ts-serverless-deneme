@@ -9,7 +9,7 @@ const app = new cdk.App();
 
 const ppdStack = new CdkTsServerlessDenemeStack(
   app,
-  `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PPD}`,
+  `${CdkTsServerlessDenemeStack.STACK_NAME}${Environment.PPD}`,
   {
     env: { region: 'us-east-1' },
     appEnv: Environment.PPD,
@@ -18,7 +18,7 @@ const ppdStack = new CdkTsServerlessDenemeStack(
 
 const prdStack = new CdkTsServerlessDenemeStack(
   app,
-  `${CdkTsServerlessDenemeStack.STACK_NAME}-${Environment.PRD}`,
+  `${CdkTsServerlessDenemeStack.STACK_NAME}${Environment.PRD}`,
   {
     env: { region: 'us-east-1' },
     appEnv: Environment.PRD,
