@@ -2,6 +2,7 @@ import * as cdk from '@aws-cdk/core';
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline';
 import {
   BuildEnvironment,
+  BuildEnvironmentVariable,
   BuildEnvironmentVariableType,
   BuildSpec,
   LinuxBuildImage,
@@ -159,6 +160,7 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
       lambdaFnName: string,
       baseDirectory: string,
       outputFileName: string,
+      variables: {[index: string]: BuildEnvironmentVariable} = {},
     ): PipelineProject {
       const buildSpec = BuildSpec.fromObject({
         version: '0.2',
@@ -183,12 +185,21 @@ export default class SudokuStackCICDPipelineStack extends cdk.Stack {
         },
       });
 
+      const environmentVariables = {
+        APP_ENV: {
+          value: appEnv,
+          type: BuildEnvironmentVariableType.PLAINTEXT,
+        },
+        ...variables,
+      };
+
       return this.getCodebuildPipelineProject(
         `${lambdaFnName}-LambdaBuild`,
         appEnv,
         buildSpec,
         {
           buildImage: LinuxBuildImage.STANDARD_2_0,
+          environmentVariables,
         },
       );
     }
